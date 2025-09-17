@@ -33,8 +33,6 @@ async function initProgramacaoTrabalho() {
     document.getElementById("exportarPDF").addEventListener("click", exportarProgramacaoComoPDF);
     document.getElementById("exportarJPEG").addEventListener("click", exportarProgramacaoComoJPEG);
     document.getElementById("exportarTexto").addEventListener("click", exportarProgramacaoComoTexto);
-    // O botão Limpar Dados foi removido do HTML, então o listener abaixo não é mais necessário e pode ser removido ou comentado.
-    // document.getElementById("limparDados").addEventListener("click", () => alert("Funcionalidade Limpar Dados a ser implementada."));
     document.getElementById("gerarOS").addEventListener("click", () => {
         window.location.href = "index.html";
     });
@@ -49,20 +47,17 @@ async function exportarProgramacaoComoPDF() {
     const areaParaCapturar = document.querySelector("main");
     const botoesExportacao = document.querySelector(".export-buttons");
 
-    // Esconde os botões de exportação temporariamente
     if (botoesExportacao) botoesExportacao.style.display = "none";
 
     try {
         const canvas = await html2canvas(areaParaCapturar, {
-            scale: 2, // Melhora a qualidade da imagem
-            useCORS: true, // Para carregar imagens de outras origens, se houver
+            scale: 2,
+            useCORS: true,
             logging: true,
             onclone: (documentClone) => {
-                // Garante que o header e nav não sejam capturados, mesmo que estejam dentro do 'main' por algum motivo.
-                // No nosso caso, eles estão fora, mas é uma boa prática.
                 const headerClone = documentClone.querySelector("header");
                 if (headerClone) headerClone.style.display = "none";
-                const navClone = documentClone.querySelector("nav"); // Se houver nav dentro do main
+                const navClone = documentClone.querySelector("nav");
                 if (navClone) navClone.style.display = "none";
             }
         });
@@ -79,15 +74,13 @@ async function exportarProgramacaoComoPDF() {
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         let alturaRestante = pdfHeight;
         let posicaoY = 0;
-        const margem = 10; // Margem de 10mm em todas as direções
+        const margem = 10;
         const larguraUtil = pdfWidth - (2 * margem);
         const alturaUtilPagina = pdf.internal.pageSize.getHeight() - (2 * margem);
 
-        // Adiciona a primeira página
         pdf.addImage(imgData, "PNG", margem, margem, larguraUtil, pdfHeight > alturaUtilPagina ? alturaUtilPagina : pdfHeight, undefined, "FAST");
         alturaRestante -= alturaUtilPagina;
 
-        // Adiciona mais páginas se necessário
         while (alturaRestante > 0) {
             posicaoY += alturaUtilPagina;
             pdf.addPage();
@@ -100,7 +93,6 @@ async function exportarProgramacaoComoPDF() {
         console.error("Erro ao gerar PDF:", error);
         alert("Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.");
     } finally {
-        // Mostra os botões de exportação novamente
         if (botoesExportacao) botoesExportacao.style.display = "";
     }
 }
@@ -111,8 +103,6 @@ async function carregarEExibirOrdens(dataSelecionada) {
         document.getElementById("listaServicosFabrica").innerHTML = "<p>Carregando...</p>";
 
         const ordensBrutas = await fetchOrdensDeServicoProgramacao(dataSelecionada);
-        // A API já retorna os dados processados, então o nome da variável pode ser enganoso.
-        // A função processarOSExtraida agora adapta a estrutura retornada pela API para a estrutura de renderização.
         const ordensProcessadas = ordensBrutas.map(os => processarOSExtraida(os)); 
         renderizarOrdensServico(ordensProcessadas);
     } catch (error) {
@@ -127,10 +117,9 @@ async function carregarEExibirOrdens(dataSelecionada) {
 async function fetchOrdensDeServicoProgramacao(data) {
     console.log(`Frontend: Buscando dados reais para a data: ${data}`);
     try {
-        // Assumindo que config.js pode definir window.config.API_BASE_URL
-        // Se não, o caminho relativo /ordem-servico/programacao será usado.
-        const apiBaseUrl = (window.config && window.config.API_BASE_URL) ? window.config.API_BASE_URL : "";
-        const url = `${apiBaseUrl}/ordem-servico/programacao?data=${data}`;
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Usando a constante API_URL definida no arquivo config.js
+        const url = `${API_URL}/ordem-servico/programacao?data=${data}`;
         
         console.log(`Frontend: Chamando API em: ${url}`);
         const response = await fetch(url);
@@ -152,11 +141,10 @@ async function fetchOrdensDeServicoProgramacao(data) {
 
     } catch (error) {
         console.error("Frontend: Erro ao buscar ordens de serviço via API:", error);
-        throw error; // Re-lança o erro para ser tratado por carregarEExibirOrdens
+        throw error;
     }
 }
 
-// Adapta a estrutura de dados retornada pelo backend para a estrutura esperada pela renderização.
 function processarOSExtraida(osBruta) {
     const pageId = osBruta.id;
     const tipoServico = osBruta.tipoServico || "";
@@ -251,7 +239,6 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-// Adiciona estilos CSS dinamicamente para os cards (mantido da versão anterior)
 const style = document.createElement("style");
 style.textContent = `
     .os-card {
@@ -294,12 +281,11 @@ async function exportarProgramacaoComoJPEG() {
     const areaParaCapturar = document.querySelector("main");
     const botoesExportacao = document.querySelector(".export-buttons");
 
-    // Esconde os botões de exportação temporariamente
     if (botoesExportacao) botoesExportacao.style.display = "none";
 
     try {
         const canvas = await html2canvas(areaParaCapturar, {
-            scale: 2, // Melhora a qualidade da imagem
+            scale: 2,
             useCORS: true,
             logging: true,
             onclone: (documentClone) => {
@@ -310,7 +296,7 @@ async function exportarProgramacaoComoJPEG() {
             }
         });
 
-        const imgData = canvas.toDataURL("image/jpeg", 0.9); // 0.9 é a qualidade do JPEG
+        const imgData = canvas.toDataURL("image/jpeg", 0.9);
 
         const link = document.createElement("a");
         link.href = imgData;
@@ -323,7 +309,6 @@ async function exportarProgramacaoComoJPEG() {
         console.error("Erro ao gerar JPEG:", error);
         alert("Ocorreu um erro ao gerar o JPEG. Verifique o console para mais detalhes.");
     } finally {
-        // Mostra os botões de exportação novamente
         if (botoesExportacao) botoesExportacao.style.display = "";
     }
 }
@@ -333,7 +318,6 @@ async function exportarProgramacaoComoTexto() {
     const seletorData = document.getElementById("seletorData");
     const dataSelecionadaStr = seletorData.value || new Date().toISOString().split("T")[0];
 
-    // Formatar a data para o cabeçalho do texto
     const dataObj = new Date(dataSelecionadaStr + "T00:00:00");
     const diaSemana = dataObj.toLocaleDateString("pt-BR", { weekday: "long" });
     const dia = ("0" + dataObj.getDate()).slice(-2);
@@ -344,7 +328,6 @@ async function exportarProgramacaoComoTexto() {
     let textoFinal = `🗓 ${tituloDataFormatado}\n\n`;
 
     try {
-        // Reutilizar a lógica de busca e processamento de OS
         const ordensBrutas = await fetchOrdensDeServicoProgramacao(dataSelecionadaStr);
         if (!ordensBrutas || ordensBrutas.length === 0) {
             alert("Não há dados de programação para a data selecionada.");
@@ -388,10 +371,9 @@ async function exportarProgramacaoComoTexto() {
             await navigator.clipboard.writeText(textoFinal);
             alert("Texto da programação copiado para a área de transferência!");
         } else {
-            // Fallback para navegadores/contextos não seguros (menos comum)
             const textArea = document.createElement("textarea");
             textArea.value = textoFinal;
-            textArea.style.position = "fixed"; // Evita rolagem
+            textArea.style.position = "fixed";
             textArea.style.opacity = "0";
             document.body.appendChild(textArea);
             textArea.focus();
@@ -411,4 +393,3 @@ async function exportarProgramacaoComoTexto() {
         alert("Ocorreu um erro ao gerar o texto para WhatsApp. Verifique o console para mais detalhes.");
     }
 }
-
