@@ -6,6 +6,17 @@ const API_URL = "https://us-central1-os---perfecta.cloudfunctions.net/api";
 // IDs dos bancos de dados do Notion
 const NOTION_IDC = '1ced9246083e80ba9305efcf0a0b83d0';
 const NOTION_IDOS = '1dfd9246083e803b9abdd3366e47e523';
+// Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDfzyQFMSDDWVoX-HUPVLy3vwi2dgAioZ4",
+  authDomain: "os---perfecta.firebaseapp.com",
+  projectId: "os---perfecta",
+  storageBucket: "os---perfecta.firebasestorage.app",
+  messagingSenderId: "573615861135",
+  appId: "1:573615861135:web:af50c59522a3e166142ffa",
+  measurementId: "G-6GFJST9FPJ"
+};
+
 // Formatadores de data
 const formatarData = (dataString) => {
   if (!dataString) return "";
