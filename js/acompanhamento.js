@@ -408,9 +408,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
     }
     if (filtroCliente.value) {
-      const clienteSelecionado = filtroCliente.value.trim();
+      const clienteSelecionado = filtroCliente.value.trim().toLowerCase();
       ordensFiltradas = ordensFiltradas.filter(
-        (ordem) => ordem.cliente && ordem.cliente.trim() === clienteSelecionado
+        (ordem) => ordem.cliente && ordem.cliente.trim().toLowerCase() === clienteSelecionado
       );
     }
     if (filtroNOS.value) {
