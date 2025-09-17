@@ -187,6 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await new Promise((resolve) => setTimeout(resolve, 300));
         mostrarProgresso("Buscando lista de clientes...", 50);
         clientes = await getClientes();
+        console.log("DEBUG: Dados de clientes recebidos da API:", clientes);
         mostrarProgresso("Salvando clientes no cache...", 70);
         salvarCache(null, null, clientes);
       }
