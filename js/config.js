@@ -3,7 +3,9 @@
 
 // Define a URL da sua API no Firebase. Todas as requisições do frontend usarão esta URL.
 const API_URL = "https://us-central1-os---perfecta.cloudfunctions.net/api";
-
+// IDs dos bancos de dados do Notion
+const NOTION_IDC = '1ced9246083e80ba9305efcf0a0b83d0';
+const NOTION_IDOS = '1dfd9246083e803b9abdd3366e47e523';
 // Formatadores de data
 const formatarData = (dataString) => {
   if (!dataString) return "";
