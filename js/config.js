@@ -2,7 +2,7 @@
 // Configurações e constantes do sistema
 
 // Define a URL da sua API no Firebase. Todas as requisições do frontend usarão esta URL.
-const API_URL = "https://us-central1-os---perfecta.cloudfunctions.net";
+const API_URL = "https://us-central1-os---perfecta.cloudfunctions.net/api";
 
 // Formatadores de data
 const formatarData = (dataString) => {
