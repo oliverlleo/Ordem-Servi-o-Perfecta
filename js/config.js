@@ -1,7 +1,7 @@
 // config.js
 // Configurações e constantes do sistema
 
-// Define a URL da sua API no Firebase. Todas as requisições do frontend usarão esta URL.
+// Define a URL completa da sua API no Firebase, incluindo o nome da função ('/api').
 const API_URL = "https://us-central1-os---perfecta.cloudfunctions.net/api";
 
 // Formatadores de data
