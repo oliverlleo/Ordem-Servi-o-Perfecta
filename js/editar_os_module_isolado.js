@@ -44,13 +44,22 @@
     // Função para CARREGAR os dados da OS (mantendo a lógica original de carregamento)
     async function getOrdemDetalhadaParaCarregamento(ordemId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/gerenciamento_isolado/ordens/${ordemId}`, { credentials: 'include' });
+            const response = await fetch(`${API_BASE_URL}/api/gerenciamento_isolado/ordens/${ordemId}`);
             if (!response.ok) {
                 if (response.status === 404) {
-                    throw new Error("Ordem não encontrada para este ID (carregamento original)");
-                } else {
-                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido ao buscar detalhes da ordem (carregamento original).' }));
-                    throw new Error(errorData.message || `Erro ${response.status} ao buscar detalhes da ordem (carregamento original)`);
+                    throw new Error("Ordem de serviço não encontrada (404).");
+                }
+                // A resposta de erro pode não ser JSON. Lê-la como texto primeiro para evitar erros de parsing.
+                const errorText = await response.text();
+                console.error("Resposta de erro do servidor (não-JSON):", errorText);
+                try {
+                    // Tenta fazer o parse do texto como JSON. Se funcionar, usa a mensagem de erro.
+                    const errorJson = JSON.parse(errorText);
+                    throw new Error(errorJson.message || `Erro ${response.status}: ${errorText}`);
+                } catch (e) {
+                    // Se o parse falhar, a resposta era HTML ou texto puro.
+                    // Lança um erro genérico, mas o erro real foi logado no console.
+                    throw new Error(`Erro ${response.status} ao buscar detalhes da ordem. Verifique o console para a resposta do servidor.`);
                 }
             }
             return await response.json();
