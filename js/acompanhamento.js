@@ -182,12 +182,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         mostrarProgresso("Carregando clientes do cache...", 20);
         clientes = obterCache(CACHE_CLIENTES_KEY);
       }
-      if (!clientes) {
+      if (!clientes || clientes.length === 0) {
         mostrarProgresso("Conectando ao servidor...", 30);
         await new Promise((resolve) => setTimeout(resolve, 300));
         mostrarProgresso("Buscando lista de clientes...", 50);
         clientes = await getClientes();
-        console.log("DEBUG: Dados de clientes recebidos da API:", clientes);
         mostrarProgresso("Salvando clientes no cache...", 70);
         salvarCache(null, null, clientes);
       }
