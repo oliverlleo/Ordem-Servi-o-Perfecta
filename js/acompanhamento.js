@@ -182,6 +182,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         mostrarProgresso("Carregando clientes do cache...", 20);
         clientes = obterCache(CACHE_CLIENTES_KEY);
       }
+      // Corrigido: Força a busca se o cache for nulo OU um array vazio.
       if (!clientes || clientes.length === 0) {
         mostrarProgresso("Conectando ao servidor...", 30);
         await new Promise((resolve) => setTimeout(resolve, 300));
@@ -192,14 +193,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       mostrarProgresso("Atualizando interface...", 90);
       filtroCliente.innerHTML = '<option value="">Selecione um cliente</option>';
-      clientes.forEach((clienteNome) => {
-        if (typeof clienteNome === 'string' && clienteNome) {
-          const option = document.createElement("option");
-          option.value = clienteNome;
-          option.textContent = clienteNome;
-          filtroCliente.appendChild(option);
+
+      // Corrigido: Lida com um array de objetos e limpa os nomes.
+      clientes.forEach((cliente) => {
+        if (cliente && cliente.nome) {
+          const nomeLimpo = cliente.nome.trim();
+          if (nomeLimpo) { // Garante que o nome não seja apenas espaços em branco
+            const option = document.createElement("option");
+            option.value = nomeLimpo;
+            option.textContent = nomeLimpo;
+            filtroCliente.appendChild(option);
+          }
         } else {
-          console.error("Item de cliente inválido recebido da API (esperava uma string):", clienteNome);
+          console.error("Item de cliente inválido recebido da API (esperava um objeto com a propriedade 'nome'):", cliente);
         }
       });
       esconderProgresso();
