@@ -187,19 +187,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         await new Promise((resolve) => setTimeout(resolve, 300));
         mostrarProgresso("Buscando lista de clientes...", 50);
         clientes = await getClientes();
+        console.log("DEBUG: Dados de clientes recebidos da API:", clientes);
         mostrarProgresso("Salvando clientes no cache...", 70);
         salvarCache(null, null, clientes);
       }
       mostrarProgresso("Atualizando interface...", 90);
       filtroCliente.innerHTML = '<option value="">Selecione um cliente</option>';
-      clientes.forEach((cliente) => {
-        if (cliente && cliente.nome) {
+      clientes.forEach((clienteNome) => {
+        if (typeof clienteNome === 'string' && clienteNome) {
           const option = document.createElement("option");
-          option.value = cliente.nome;
-          option.textContent = cliente.nome;
+          option.value = clienteNome;
+          option.textContent = clienteNome;
           filtroCliente.appendChild(option);
         } else {
-          console.error("Objeto de cliente inválido recebido da API:", cliente);
+          console.error("Item de cliente inválido recebido da API (esperava uma string):", clienteNome);
         }
       });
       esconderProgresso();
@@ -412,8 +413,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
     }
     if (filtroCliente.value) {
+      const clienteSelecionado = filtroCliente.value.trim().toLowerCase();
       ordensFiltradas = ordensFiltradas.filter(
-        (ordem) => ordem.cliente === filtroCliente.value
+        (ordem) => ordem.cliente && ordem.cliente.trim().toLowerCase() === clienteSelecionado
       );
     }
     if (filtroNOS.value) {
