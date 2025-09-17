@@ -44,7 +44,7 @@
     // Função para CARREGAR os dados da OS (mantendo a lógica original de carregamento)
     async function getOrdemDetalhadaParaCarregamento(ordemId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/edicao_os_dedicada/ordens/${ordemId}`);
+            const response = await fetch(`${API_BASE_URL}/api/gerenciamento/ordens/${ordemId}`);
             if (!response.ok) {
                 if (response.status === 404) {
                     throw new Error("Ordem não encontrada para este ID (carregamento original)");
