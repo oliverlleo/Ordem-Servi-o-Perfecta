@@ -7,8 +7,8 @@
     "use strict";
 
     const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:3000' 
-        : 'https://us-central1-os---perfecta.cloudfunctions.net';
+        ? 'http://localhost:3000/api'
+        : 'https://us-central1-os---perfecta.cloudfunctions.net/api';
 
     const mostrarMensagemEditarIsolado = (mensagem, tipo = 'info') => {
         let mensagemElement = document.getElementById('isolated-mensagem-sistema');
@@ -44,7 +44,7 @@
     // Função para CARREGAR os dados da OS (mantendo a lógica original de carregamento)
     async function getOrdemDetalhadaParaCarregamento(ordemId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/edicao_os_dedicada/ordens/${ordemId}`);
+            const response = await fetch(`${API_BASE_URL}/gerenciamento_isolado/ordens/${ordemId}`);
             if (!response.ok) {
                 if (response.status === 404) {
                     throw new Error("Ordem não encontrada para este ID (carregamento original)");
@@ -64,7 +64,7 @@
     // Função para ATUALIZAR/SALVAR os dados da OS (usando a nova rota dedicada)
     async function atualizarOrdemPelaRotaDedicada(ordemId, dadosParaAtualizar) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/edicao_os_dedicada/ordens/${ordemId}`, {
+            const response = await fetch(`${API_BASE_URL}/edicao_os_dedicada/ordens/${ordemId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
