@@ -8,7 +8,7 @@
 
     const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
         ? 'http://localhost:3000' 
-        : '';
+        : 'https://us-central1-os---perfecta.cloudfunctions.net';
 
     const mostrarMensagemEditarIsolado = (mensagem, tipo = 'info') => {
         let mensagemElement = document.getElementById('isolated-mensagem-sistema');
