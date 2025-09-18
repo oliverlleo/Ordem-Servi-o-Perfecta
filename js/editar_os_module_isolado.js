@@ -8,7 +8,7 @@
 
     const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
         ? 'http://localhost:3000/api' 
-        : 'https://us-central1-os---perfecta.cloudfunctions.net';
+        : 'https://us-central1-os---perfecta.cloudfunctions.net/api';
 
     const mostrarMensagemEditarIsolado = (mensagem, tipo = 'info') => {
         let mensagemElement = document.getElementById('isolated-mensagem-sistema');
@@ -41,47 +41,48 @@
         }, 5000);
     };
 
-    // Função para CARREGAR os dados da OS (mantendo a lógica original de carregamento)
+    // Função para CARREGAR os dados da OS
     async function getOrdemDetalhadaParaCarregamento(ordemId) {
         try {
-    const response = await fetch(`${API_BASE_URL.replace("/api", "")}/gerenciamento_isolado/ordens/${ordemId}`);           if (!response.ok) {
+            const response = await fetch(`${API_BASE_URL}/gerenciamento_isolado/ordens/${ordemId}`);
+            if (!response.ok) {
                 if (response.status === 404) {
                     throw new Error("Ordem não encontrada para este ID (carregamento original)");
                 } else {
-                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido ao buscar detalhes da ordem (carregamento original).' }));
-                    throw new Error(errorData.message || `Erro ${response.status} ao buscar detalhes da ordem (carregamento original)`);
+                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido ao buscar detalhes da ordem.' }));
+                    throw new Error(errorData.message || `Erro ${response.status} ao buscar detalhes da ordem.`);
                 }
             }
             return await response.json();
         } catch (error) {
             console.error('[Carregamento Original] Erro em getOrdemDetalhadaParaCarregamento:', error);
-            mostrarMensagemEditarIsolado(error.message || 'Erro ao buscar detalhes da ordem (carregamento original).', 'erro');
+            mostrarMensagemEditarIsolado(error.message || 'Erro ao buscar detalhes da ordem.', 'erro');
             throw error;
         }
     }
 
-    // Função para ATUALIZAR/SALVAR os dados da OS (usando a nova rota dedicada)
+    // Função para ATUALIZAR/SALVAR os dados da OS
     async function atualizarOrdemPelaRotaDedicada(ordemId, dadosParaAtualizar) {
         try {
-    const response = await fetch(`${API_BASE_URL}/edicao_os_dedicada/ordens/${ordemId}`, {
+            const response = await fetch(`${API_BASE_URL}/edicao_os_dedicada/ordens/${ordemId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(dadosParaAtualizar) // Payload com notionData e firebaseData
+                body: JSON.stringify(dadosParaAtualizar)
             });
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido ao atualizar ordem (rota dedicada).' }));
-                throw new Error(errorData.message || `Erro ${response.status} ao atualizar ordem de serviço (rota dedicada)`);
+                const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido ao atualizar ordem.' }));
+                throw new Error(errorData.message || `Erro ${response.status} ao atualizar ordem de serviço.`);
             }
             return await response.json();
         } catch (error) {
             console.error('[Edição Dedicada - Salvar] Erro em atualizarOrdemPelaRotaDedicada:', error);
-            mostrarMensagemEditarIsolado(error.message || 'Erro ao atualizar ordem de serviço (rota dedicada).', 'erro');
+            mostrarMensagemEditarIsolado(error.message || 'Erro ao atualizar ordem de serviço.', 'erro');
             throw error;
         }
     }
-
+    
     let clienteIdGlobalEditarIsolado = null;
     let localIdGlobalEditarIsolado = null;
 
@@ -89,8 +90,6 @@
         if (!document.getElementById("formEditarOS")) {
             return;
         }
-        console.log("[Edição Isolada] DOM carregado. Carregamento: Original, Salvamento: Dedicado.");
-
         const formEditarOS = document.getElementById("formEditarOS");
         const loadingMessage = document.getElementById("loadingMessage");
         const numeroOSInput = document.getElementById("numeroOS");
@@ -107,7 +106,6 @@
         const observacoesTextarea = document.getElementById("observacoes");
         const btnAlterar = document.getElementById("btnAlterar");
         const statusSelect = document.getElementById("status");
-
         const urlParams = new URLSearchParams(window.location.search);
         const ordemId = urlParams.get("id");
 
@@ -138,18 +136,9 @@
             if (!selectElement) return;
             selectElement.innerHTML = '';
             if (!options || !Array.isArray(options)) {
-                console.warn("[Edição Isolada] Opções inválidas para popularMultiSelect (options):", options);
                 options = [];
             }
-            let effectiveSelectedValues = [];
-            if (selectedValues && !Array.isArray(selectedValues)) {
-                effectiveSelectedValues = [String(selectedValues)];
-            } else if (Array.isArray(selectedValues)){
-                effectiveSelectedValues = selectedValues.map(String);
-            } else {
-                console.warn("[Edição Isolada] selectedValues inválido para popularMultiSelect:", selectedValues);
-            }
-
+            let effectiveSelectedValues = Array.isArray(selectedValues) ? selectedValues.map(String) : [String(selectedValues)];
             options.forEach(option => {
                 const optionElement = document.createElement('option');
                 const val = option[valueField];
@@ -164,47 +153,34 @@
 
         async function carregarDadosOriginaisDaOS() {
             try {
-                if(loadingMessage) loadingMessage.textContent = "Carregando dados da O.S. (lógica original)....";
+                if(loadingMessage) loadingMessage.textContent = "Carregando dados da O.S. ...";
                 if(formEditarOS) formEditarOS.style.display = "none";
-
                 const ordem = await getOrdemDetalhadaParaCarregamento(ordemId);
-
                 if (!ordem) {
-                    throw new Error("Dados da ordem não encontrados (carregamento original).");
+                    throw new Error("Dados da ordem não encontrados.");
                 }
-
-                console.log("[Carregamento Original] Dados da OS recebidos:", ordem);
                 clienteIdGlobalEditarIsolado = ordem.clienteId;
                 localIdGlobalEditarIsolado = ordem.localId;
-
                 if(numeroOSInput) numeroOSInput.value = ordem.numeroOS || "-";
                 if(clienteNomeInput) clienteNomeInput.value = ordem.clienteNome || "-";
-                
-                // CORREÇÃO: Priorizar ordem.endereco para o campo Endereço
                 if(enderecoInput) enderecoInput.value = ordem.endereco || ordem.enderecoCompleto || ordem.enderecoOS || ordem.clienteEndereco || "-"; 
                 if(cidadeInput) cidadeInput.value = ordem.cidade || ordem.cidadeOS || ordem.clienteCidade || "-";
-                
                 const opcoes = ordem.opcoes || {};
-
-                popularSelect(localSelect, opcoes.locais || (ordem.localId ? [{id: ordem.localId, nome: ordem.localNome || 'Local Desconhecido'}] : []), 'id', 'nome', ordem.localId);
-                // CORREÇÃO: Usar ordem.prestadores para os valores selecionados em popularMultiSelect
+                popularSelect(localSelect, opcoes.locais || [], 'id', 'nome', ordem.localId);
                 popularMultiSelect(prestadoresSelect, opcoes.equipes || [], 'name', 'name', ordem.prestadores || []);
-                popularSelect(responsavelSelect, opcoes.responsaveis || (ordem.responsavel ? [{name: ordem.responsavel}] : []), 'name', 'name', ordem.responsavel);
-                popularSelect(tipoServicoSelect, opcoes.tiposServico || (ordem.tipoServico ? [{name: ordem.tipoServico}] : []), 'name', 'name', ordem.tipoServico);
-                popularSelect(statusSelect, opcoes.statusOptions || (ordem.status ? [{name: ordem.status}] : []), 'name', 'name', ordem.status);
-
+                popularSelect(responsavelSelect, opcoes.responsaveis || [], 'name', 'name', ordem.responsavel);
+                popularSelect(tipoServicoSelect, opcoes.tiposServico || [], 'name', 'name', ordem.tipoServico);
+                popularSelect(statusSelect, opcoes.statusOptions || [], 'name', 'name', ordem.status);
                 if(agendamentoInicialInput) agendamentoInicialInput.value = ordem.agendamentoInicial ? ordem.agendamentoInicial.split("T")[0] : "";
                 if(agendamentoFinalInput) agendamentoFinalInput.value = ordem.agendamentoFinal ? ordem.agendamentoFinal.split("T")[0] : "";
                 if(servicosTextarea) servicosTextarea.value = ordem.servicosExecutados || ordem.servicos || "";
                 if(observacoesTextarea) observacoesTextarea.value = ordem.observacoes || "";
-
                 if(loadingMessage) loadingMessage.style.display = "none";
                 if(formEditarOS) formEditarOS.style.display = "block";
                 if(btnAlterar) btnAlterar.disabled = false;
-
             } catch (error) {
                 console.error("[Carregamento Original] Erro ao carregar dados da OS:", error);
-                if(loadingMessage) loadingMessage.textContent = `Erro ao carregar dados (lógica original): ${error.message}. Tente recarregar a página.`;
+                if(loadingMessage) loadingMessage.textContent = `Erro ao carregar dados: ${error.message}. Tente recarregar a página.`;
                 if(loadingMessage) loadingMessage.style.color = "red";
                 if(btnAlterar) btnAlterar.disabled = true;
             }
@@ -213,8 +189,7 @@
         async function handleAlterarOSUsandoRotaDedicada(event) {
             event.preventDefault();
             if(btnAlterar) btnAlterar.disabled = true;
-            if(btnAlterar) btnAlterar.textContent = "Salvando (rota dedicada)...";
-
+            if(btnAlterar) btnAlterar.textContent = "Salvando...";
             try {
                 const dadosNotion = {
                     agendamentoInicial: agendamentoInicialInput ? agendamentoInicialInput.value : null,
@@ -226,35 +201,28 @@
                     observacoes: observacoesTextarea ? observacoesTextarea.value : null,
                     status: statusSelect ? statusSelect.value : null,
                 };
-
                 const dadosFirebase = {
                     ...dadosNotion,
                     clienteId: clienteIdGlobalEditarIsolado,
                     localId: localIdGlobalEditarIsolado,
                     clienteNome: clienteNomeInput ? clienteNomeInput.value : null,
-                    localNome: localSelect && localSelect.selectedIndex >= 0 && localSelect.options[localSelect.selectedIndex] && localSelect.options[localSelect.selectedIndex].value !== "" ? localSelect.options[localSelect.selectedIndex].text : (document.getElementById('localNomeHidden') ? document.getElementById('localNomeHidden').value : null),
+                    localNome: localSelect && localSelect.selectedIndex >= 0 && localSelect.options[localSelect.selectedIndex].text,
                     enderecoOS: enderecoInput ? enderecoInput.value : null,
                     cidadeOS: cidadeInput ? cidadeInput.value : null,
                     numeroOS: numeroOSInput ? numeroOSInput.value : null
                 };
-
                 const payloadCompleto = {
                     notionData: dadosNotion,
                     firebaseData: dadosFirebase
                 };
-
-                console.log("[Edição Dedicada - Salvar] Dados para atualizar:", payloadCompleto);
                 await atualizarOrdemPelaRotaDedicada(ordemId, payloadCompleto);
-
-                console.log("[Edição Dedicada - Salvar] Ordem atualizada com sucesso!");
-                mostrarMensagemEditarIsolado("Ordem de Serviço atualizada com sucesso (rota dedicada)! Redirecionando...", "info");
+                mostrarMensagemEditarIsolado("Ordem de Serviço atualizada com sucesso! Redirecionando...", "info");
                 setTimeout(() => {
                     window.location.replace("gerenciamento.html"); 
                 }, 2000);
-
             } catch (error) {
                 console.error("[Edição Dedicada - Salvar] Erro ao atualizar OS:", error);
-                mostrarMensagemEditarIsolado(`Erro ao atualizar Ordem de Serviço (rota dedicada): ${error.message}`, 'erro');
+                mostrarMensagemEditarIsolado(`Erro ao atualizar Ordem de Serviço: ${error.message}`, 'erro');
                 if(btnAlterar) btnAlterar.disabled = false;
                 if(btnAlterar) btnAlterar.textContent = "Alterar";
             }
@@ -264,26 +232,15 @@
             btnAlterar.addEventListener("click", handleAlterarOSUsandoRotaDedicada);
         }
         
-        // Adicionar evento de clique para o botão Cancelar
         const btnCancelar = document.getElementById("btnCancelar");
         if (btnCancelar) {
             btnCancelar.addEventListener("click", function() {
-                // Usar location.replace para evitar problemas de histórico do navegador
                 window.location.replace("gerenciamento.html");
             });
         }
         
-        if (formEditarOS && loadingMessage && numeroOSInput && clienteNomeInput && btnAlterar) {
+        if (formEditarOS) {
             carregarDadosOriginaisDaOS();
-        } else {
-            console.warn("[Edição Isolada] Um ou mais elementos essenciais do formulário não foram encontrados.");
-            if(loadingMessage) {
-                loadingMessage.textContent = "Erro: Elementos do formulário não encontrados.";
-                loadingMessage.style.color = "red";
-            }
         }
-
-        console.log("[Edição Isolada] Módulo inicializado.");
     });
-
 })();
