@@ -36,6 +36,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     console.log(`Editando OS com ID: ${ordemId}`);
 
+    // Funções auxiliares para popular selects, agora no escopo do DOMContentLoaded
+    const popularSelect = (selectElement, options, valueField = 'id', textField = 'name', selectedValue = null) => {
+        selectElement.innerHTML = '<option value="">Selecione...</option>';
+        options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option[valueField];
+            optionElement.textContent = option[textField];
+            if (selectedValue && String(option[valueField]) === String(selectedValue)) {
+                optionElement.selected = true;
+            }
+            selectElement.appendChild(optionElement);
+        });
+    };
+
+    const popularMultiSelect = (selectElement, options, valueField = 'name', textField = 'name', selectedValues = []) => {
+        selectElement.innerHTML = '';
+        options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option[valueField];
+            optionElement.textContent = option[textField];
+            if (selectedValues.includes(option[valueField])) {
+                optionElement.selected = true;
+            }
+            selectElement.appendChild(optionElement);
+        });
+    };
+
     // Função para carregar dados da OS e preencher o formulário
     async function carregarDadosOS() {
         try {
@@ -54,33 +81,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             // Armazenar clienteId globalmente
             clienteIdGlobal = ordem.clienteId;
             console.log(`Cliente ID armazenado: ${clienteIdGlobal}`);
-
-            // Funções auxiliares para popular selects
-            const popularSelect = (selectElement, options, valueField = 'id', textField = 'name', selectedValue = null) => {
-                selectElement.innerHTML = '<option value="">Selecione...</option>';
-                options.forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option[valueField];
-                    optionElement.textContent = option[textField];
-                    if (selectedValue && String(option[valueField]) === String(selectedValue)) {
-                        optionElement.selected = true;
-                    }
-                    selectElement.appendChild(optionElement);
-                });
-            };
-
-            const popularMultiSelect = (selectElement, options, valueField = 'name', textField = 'name', selectedValues = []) => {
-                selectElement.innerHTML = '';
-                options.forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option[valueField];
-                    optionElement.textContent = option[textField];
-                    if (selectedValues.includes(option[valueField])) {
-                        optionElement.selected = true;
-                    }
-                    selectElement.appendChild(optionElement);
-                });
-            };
 
             // Preencher campos
             numeroOSInput.value = ordem.numeroOS || "-";
