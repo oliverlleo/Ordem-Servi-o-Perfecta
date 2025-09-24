@@ -61,6 +61,30 @@
         }
     }
 
+    async function getClientesIsolado() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/clientes_isolado`);
+            if (!response.ok) throw new Error('Erro ao buscar clientes');
+            return await response.json();
+        } catch (error) {
+            console.error('[Edição Dedicada] Erro em getClientesIsolado:', error);
+            mostrarMensagemEditarIsolado('Não foi possível carregar a lista de clientes.', 'erro');
+            return [];
+        }
+    }
+
+    async function getLocaisPorClienteIsolado(clienteId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/locais_isolado/cliente/${clienteId}`);
+            if (!response.ok) throw new Error('Erro ao buscar locais do cliente');
+            return await response.json();
+        } catch (error) {
+            console.error('[Edição Dedicada] Erro em getLocaisPorClienteIsolado:', error);
+            mostrarMensagemEditarIsolado('Não foi possível carregar os locais para o cliente selecionado.', 'erro');
+            return [];
+        }
+    }
+
     // Função para ATUALIZAR/SALVAR os dados da OS
     async function atualizarOrdemPelaRotaDedicada(ordemId, dadosParaAtualizar) {
         try {
@@ -84,7 +108,7 @@
     }
     
     let clienteIdGlobalEditarIsolado = null;
-    let localIdGlobalEditarIsolado = null;
+    let todosClientesIsolado = [];
 
     document.addEventListener("DOMContentLoaded", async () => {
         if (!document.getElementById("formEditarOS")) {
@@ -93,7 +117,7 @@
         const formEditarOS = document.getElementById("formEditarOS");
         const loadingMessage = document.getElementById("loadingMessage");
         const numeroOSInput = document.getElementById("numeroOS");
-        const clienteNomeInput = document.getElementById("clienteNome");
+        const clienteSelect = document.getElementById("clienteSelect");
         const enderecoInput = document.getElementById("endereco");
         const cidadeInput = document.getElementById("cidade");
         const localSelect = document.getElementById("local");
@@ -160,21 +184,27 @@
                     throw new Error("Dados da ordem não encontrados.");
                 }
                 clienteIdGlobalEditarIsolado = ordem.clienteId;
-                localIdGlobalEditarIsolado = ordem.localId;
+
                 if(numeroOSInput) numeroOSInput.value = ordem.numeroOS || "-";
-                if(clienteNomeInput) clienteNomeInput.value = ordem.clienteNome || "-";
                 if(enderecoInput) enderecoInput.value = ordem.endereco || ordem.enderecoCompleto || ordem.enderecoOS || ordem.clienteEndereco || "-"; 
                 if(cidadeInput) cidadeInput.value = ordem.cidade || ordem.cidadeOS || ordem.clienteCidade || "-";
+
+                // Carregar clientes
+                todosClientesIsolado = await getClientesIsolado();
+                popularSelect(clienteSelect, todosClientesIsolado, 'id', 'nome', ordem.clienteId);
+
                 const opcoes = ordem.opcoes || {};
                 popularSelect(localSelect, opcoes.locais || [], 'id', 'nome', ordem.localId);
                 popularMultiSelect(prestadoresSelect, opcoes.equipes || [], 'name', 'name', ordem.prestadores || []);
                 popularSelect(responsavelSelect, opcoes.responsaveis || [], 'name', 'name', ordem.responsavel);
                 popularSelect(tipoServicoSelect, opcoes.tiposServico || [], 'name', 'name', ordem.tipoServico);
                 popularSelect(statusSelect, opcoes.statusOptions || [], 'name', 'name', ordem.status);
+
                 if(agendamentoInicialInput) agendamentoInicialInput.value = ordem.agendamentoInicial ? ordem.agendamentoInicial.split("T")[0] : "";
                 if(agendamentoFinalInput) agendamentoFinalInput.value = ordem.agendamentoFinal ? ordem.agendamentoFinal.split("T")[0] : "";
                 if(servicosTextarea) servicosTextarea.value = ordem.servicosExecutados || ordem.servicos || "";
                 if(observacoesTextarea) observacoesTextarea.value = ordem.observacoes || "";
+
                 if(loadingMessage) loadingMessage.style.display = "none";
                 if(formEditarOS) formEditarOS.style.display = "block";
                 if(btnAlterar) btnAlterar.disabled = false;
@@ -185,6 +215,27 @@
                 if(btnAlterar) btnAlterar.disabled = true;
             }
         }
+
+        clienteSelect.addEventListener('change', async (e) => {
+            const novoClienteId = e.target.value;
+            if (!novoClienteId) {
+                enderecoInput.value = '';
+                cidadeInput.value = '';
+                localSelect.innerHTML = '<option value="">Selecione um cliente</option>';
+                return;
+            }
+
+            const clienteSelecionado = todosClientesIsolado.find(c => c.id === novoClienteId);
+            if (clienteSelecionado) {
+                clienteIdGlobalEditarIsolado = novoClienteId;
+                enderecoInput.value = clienteSelecionado.endereco || '';
+                cidadeInput.value = clienteSelecionado.cidade || '';
+
+                localSelect.innerHTML = '<option value="">Carregando locais...</option>';
+                const novosLocais = await getLocaisPorClienteIsolado(novoClienteId);
+                popularSelect(localSelect, novosLocais, 'id', 'nome');
+            }
+        });
 
         async function handleAlterarOSUsandoRotaDedicada(event) {
             event.preventDefault();
@@ -201,11 +252,13 @@
                     observacoes: observacoesTextarea ? observacoesTextarea.value : null,
                     status: statusSelect ? statusSelect.value : null,
                 };
+
+                const selectedClienteOption = clienteSelect.options[clienteSelect.selectedIndex];
                 const dadosFirebase = {
                     ...dadosNotion,
-                    clienteId: clienteIdGlobalEditarIsolado,
-                    localId: localIdGlobalEditarIsolado,
-                    clienteNome: clienteNomeInput ? clienteNomeInput.value : null,
+                    clienteId: clienteSelect.value,
+                    localId: localSelect.value,
+                    clienteNome: selectedClienteOption ? selectedClienteOption.text : '',
                     localNome: localSelect && localSelect.selectedIndex >= 0 && localSelect.options[localSelect.selectedIndex].text,
                     enderecoOS: enderecoInput ? enderecoInput.value : null,
                     cidadeOS: cidadeInput ? cidadeInput.value : null,
