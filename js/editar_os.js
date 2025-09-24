@@ -1,6 +1,7 @@
 // frontend/js/editar_os.js
 // Lógica para a tela de Edição de Ordem de Serviço
 
+let todosClientes = []; // Armazenar todos os clientes carregados
 let clienteIdGlobal = null; // Variável global para armazenar o ID do cliente
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -10,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const formEditarOS = document.getElementById("formEditarOS");
     const loadingMessage = document.getElementById("loadingMessage");
     const numeroOSInput = document.getElementById("numeroOS");
-    const clienteNomeInput = document.getElementById("clienteNome");
+    const clienteSelect = document.getElementById("clienteSelect"); // Novo select de cliente
     const enderecoInput = document.getElementById("endereco");
     const cidadeInput = document.getElementById("cidade");
     const localSelect = document.getElementById("local");
@@ -54,20 +55,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             clienteIdGlobal = ordem.clienteId;
             console.log(`Cliente ID armazenado: ${clienteIdGlobal}`);
 
-            // 2. Preencher campos não editáveis
-            numeroOSInput.value = ordem.numeroOS || "-";
-            clienteNomeInput.value = ordem.clienteNome || "-";
-            enderecoInput.value = ordem.clienteEndereco || "-";
-            cidadeInput.value = ordem.clienteCidade || "-";
-
-            // 3. Carregar e preencher campos editáveis
+            // Funções auxiliares para popular selects
             const popularSelect = (selectElement, options, valueField = 'id', textField = 'name', selectedValue = null) => {
                 selectElement.innerHTML = '<option value="">Selecione...</option>';
                 options.forEach(option => {
                     const optionElement = document.createElement('option');
                     optionElement.value = option[valueField];
                     optionElement.textContent = option[textField];
-                    if (selectedValue && option[valueField] === selectedValue) {
+                    if (selectedValue && String(option[valueField]) === String(selectedValue)) {
                         optionElement.selected = true;
                     }
                     selectElement.appendChild(optionElement);
@@ -87,6 +82,21 @@ document.addEventListener("DOMContentLoaded", async () => {
                 });
             };
 
+            // Preencher campos
+            numeroOSInput.value = ordem.numeroOS || "-";
+            enderecoInput.value = ordem.clienteEndereco || "-";
+            cidadeInput.value = ordem.clienteCidade || "-";
+
+            // Carregar e selecionar cliente
+            try {
+                todosClientes = await getClientes();
+                popularSelect(clienteSelect, todosClientes, 'id', 'nome', ordem.clienteId);
+            } catch (error) {
+                console.error("Erro ao carregar clientes:", error);
+                clienteSelect.innerHTML = '<option value="">Erro ao carregar clientes</option>';
+            }
+
+            // Popular outros selects
             popularSelect(localSelect, ordem.opcoes?.locais || [], 'id', 'nome', ordem.localId);
             popularMultiSelect(prestadoresSelect, ordem.opcoes?.equipes || [], 'name', 'name', ordem.prestadores || []);
             popularSelect(responsavelSelect, ordem.opcoes?.responsaveis || [], 'name', 'name', ordem.responsavel);
@@ -117,6 +127,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
             // 1. Coletar dados do formulário (INCLUINDO NOME/ENDERECO/CIDADE)
+            const selectedClienteOption = clienteSelect.options[clienteSelect.selectedIndex];
             const dadosParaAtualizar = {
                 agendamentoInicial: agendamentoInicialInput.value,
                 agendamentoFinal: agendamentoFinalInput.value,
@@ -125,12 +136,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 tipoServico: tipoServicoSelect.value,
                 servicos: servicosTextarea.value,
                 observacoes: observacoesTextarea.value,
-                // Incluir IDs e NOMES/DETALHES para o backend usar no Firebase
-                clienteId: clienteIdGlobal, // Usa a variável global
-                localId: localSelect.value, // Pega o ID do local selecionado no dropdown
-                clienteNome: clienteNomeInput.value, // Pega o nome do cliente do campo não editável
-                endereco: enderecoInput.value, // Pega o endereço do campo não editável
-                cidade: cidadeInput.value // Pega a cidade do campo não editável
+                // IDs e Nomes/Detalhes atualizados para o backend
+                clienteId: clienteSelect.value, // Pega o ID do cliente do select
+                localId: localSelect.value,
+                clienteNome: selectedClienteOption ? selectedClienteOption.text : '', // Pega o nome do cliente do select
+                endereco: enderecoInput.value, // O endereço é atualizado pelo listener
+                cidade: cidadeInput.value // A cidade é atualizada pelo listener
             };
 
             console.log("Dados para atualizar (incluindo IDs para Firebase):", dadosParaAtualizar);
@@ -149,6 +160,34 @@ document.addEventListener("DOMContentLoaded", async () => {
             btnAlterar.textContent = "Alterar";
         }
     }
+
+    // Adicionar listener para a mudança de cliente
+    clienteSelect.addEventListener('change', async (e) => {
+        const novoClienteId = e.target.value;
+        if (!novoClienteId) {
+            enderecoInput.value = '';
+            cidadeInput.value = '';
+            localSelect.innerHTML = '<option value="">Selecione um cliente</option>';
+            return;
+        }
+
+        const clienteSelecionado = todosClientes.find(c => c.id === novoClienteId);
+        if (clienteSelecionado) {
+            clienteIdGlobal = novoClienteId; // Atualiza o ID global
+            enderecoInput.value = clienteSelecionado.endereco || '';
+            cidadeInput.value = clienteSelecionado.cidade || '';
+
+            // Recarregar locais para o novo cliente
+            localSelect.innerHTML = '<option value="">Carregando locais...</option>';
+            try {
+                const novosLocais = await getLocaisPorCliente(novoClienteId);
+                popularSelect(localSelect, novosLocais, 'id', 'nome');
+            } catch (error) {
+                console.error('Erro ao buscar locais para o novo cliente:', error);
+                localSelect.innerHTML = '<option value="">Erro ao carregar locais</option>';
+            }
+        }
+    });
 
     // Adicionar listener ao botão Alterar
     btnAlterar.addEventListener("click", handleAlterarOS);
