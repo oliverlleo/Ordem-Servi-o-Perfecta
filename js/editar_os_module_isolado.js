@@ -245,7 +245,10 @@
             if(btnAlterar) btnAlterar.disabled = true;
             if(btnAlterar) btnAlterar.textContent = "Salvando...";
             try {
-                const dadosNotion = {
+                const selectedClienteOption = clienteSelect.options[clienteSelect.selectedIndex];
+                
+                // CORREÇÃO: Enviar um único objeto plano (flat) para o backend, como a função `atualizarDadosOs` espera.
+                const payloadCompleto = {
                     agendamentoInicial: agendamentoInicialInput ? agendamentoInicialInput.value : null,
                     agendamentoFinal: agendamentoFinalInput ? agendamentoFinalInput.value : null,
                     prestadores: prestadoresSelect ? Array.from(prestadoresSelect.selectedOptions).map(option => option.value) : [],
@@ -254,11 +257,6 @@
                     servicos: servicosTextarea ? servicosTextarea.value : null,
                     observacoes: observacoesTextarea ? observacoesTextarea.value : null,
                     status: statusSelect ? statusSelect.value : null,
-                };
-                
-                const selectedClienteOption = clienteSelect.options[clienteSelect.selectedIndex];
-                const dadosFirebase = {
-                    ...dadosNotion,
                     clienteId: clienteSelect.value,
                     localId: localSelect.value,
                     clienteNome: selectedClienteOption ? selectedClienteOption.text : '',
@@ -267,10 +265,7 @@
                     cidadeOS: cidadeInput ? cidadeInput.value : null,
                     numeroOS: numeroOSInput ? numeroOSInput.value : null
                 };
-                const payloadCompleto = {
-                    notionData: dadosNotion,
-                    firebaseData: dadosFirebase
-                };
+
                 await atualizarOrdemPelaRotaDedicada(ordemId, payloadCompleto);
                 mostrarMensagemEditarIsolado("Ordem de Serviço atualizada com sucesso! Redirecionando...", "info");
                 setTimeout(() => {
