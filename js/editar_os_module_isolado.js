@@ -76,8 +76,9 @@
 
     async function getLocaisPorClienteIsolado(clienteId) {
         try {
-            // CORREÇÃO: Removido o sufixo _isolado da rota, que não existe.
-            const response = await fetch(`${API_BASE_URL}/locais/cliente/${clienteId}`);
+            // CORREÇÃO FINAL: Adicionado o parâmetro de query `database` que estava faltando.
+            const ILC = "1d8d9246083e80128f65f99939f3593d"; // ID Base Locais (ILC)
+            const response = await fetch(`${API_BASE_URL}/locais/cliente/${clienteId}?database=${ILC}`);
             if (!response.ok) throw new Error('Erro ao buscar locais do cliente');
             return await response.json();
         } catch (error) {
