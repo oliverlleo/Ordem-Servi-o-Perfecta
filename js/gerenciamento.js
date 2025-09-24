@@ -144,10 +144,13 @@ async function carregarOrdensGerenciamento(filtros = {}) {
     const corpoTabelaOrdens = document.getElementById("corpoTabelaOrdens");
     corpoTabelaOrdens.innerHTML = '<tr><td colspan="9" style="text-align: center;">Carregando ordens...</td></tr>';
     try {
-        // A função getOrdensGerenciamento em services.js precisará ser ajustada
-        // para lidar com um array de status, se o backend esperar isso.
-        // Por enquanto, vamos assumir que o backend pode receber um array ou que services.js o tratará.
-        const ordens = await getOrdensGerenciamento(filtros); 
+        let ordens;
+        // Se não houver filtros, busca todas as OS. Se houver, usa a busca com filtro.
+        if (Object.keys(filtros).length === 0) {
+            ordens = await getOrdens(); // Função que busca todas as ordens
+        } else {
+            ordens = await getOrdensGerenciamento(filtros); // Função que busca com filtros
+        }
         console.log("Ordens recebidas:", ordens);
         renderizarTabelaGerenciamento(ordens); // Renomeado para clareza
     } catch (error) {
