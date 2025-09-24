@@ -63,7 +63,8 @@
 
     async function getClientesIsolado() {
         try {
-            const response = await fetch(`${API_BASE_URL}/clientes_isolado`);
+            // CORREÇÃO: Removido o sufixo _isolado da rota, que não existe.
+            const response = await fetch(`${API_BASE_URL}/clientes`);
             if (!response.ok) throw new Error('Erro ao buscar clientes');
             return await response.json();
         } catch (error) {
@@ -75,7 +76,8 @@
 
     async function getLocaisPorClienteIsolado(clienteId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/locais_isolado/cliente/${clienteId}`);
+            // CORREÇÃO: Removido o sufixo _isolado da rota, que não existe.
+            const response = await fetch(`${API_BASE_URL}/locais/cliente/${clienteId}`);
             if (!response.ok) throw new Error('Erro ao buscar locais do cliente');
             return await response.json();
         } catch (error) {
