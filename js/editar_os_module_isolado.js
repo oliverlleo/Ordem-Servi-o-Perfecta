@@ -186,11 +186,11 @@
                     throw new Error("Dados da ordem não encontrados.");
                 }
                 clienteIdGlobalEditarIsolado = ordem.clienteId;
-
+                
                 if(numeroOSInput) numeroOSInput.value = ordem.numeroOS || "-";
                 if(enderecoInput) enderecoInput.value = ordem.endereco || ordem.enderecoCompleto || ordem.enderecoOS || ordem.clienteEndereco || "-"; 
                 if(cidadeInput) cidadeInput.value = ordem.cidade || ordem.cidadeOS || ordem.clienteCidade || "-";
-
+                
                 // Carregar clientes
                 todosClientesIsolado = await getClientesIsolado();
                 popularSelect(clienteSelect, todosClientesIsolado, 'id', 'nome', ordem.clienteId);
@@ -201,12 +201,12 @@
                 popularSelect(responsavelSelect, opcoes.responsaveis || [], 'name', 'name', ordem.responsavel);
                 popularSelect(tipoServicoSelect, opcoes.tiposServico || [], 'name', 'name', ordem.tipoServico);
                 popularSelect(statusSelect, opcoes.statusOptions || [], 'name', 'name', ordem.status);
-
+                
                 if(agendamentoInicialInput) agendamentoInicialInput.value = ordem.agendamentoInicial ? ordem.agendamentoInicial.split("T")[0] : "";
                 if(agendamentoFinalInput) agendamentoFinalInput.value = ordem.agendamentoFinal ? ordem.agendamentoFinal.split("T")[0] : "";
                 if(servicosTextarea) servicosTextarea.value = ordem.servicosExecutados || ordem.servicos || "";
                 if(observacoesTextarea) observacoesTextarea.value = ordem.observacoes || "";
-
+                
                 if(loadingMessage) loadingMessage.style.display = "none";
                 if(formEditarOS) formEditarOS.style.display = "block";
                 if(btnAlterar) btnAlterar.disabled = false;
@@ -217,7 +217,7 @@
                 if(btnAlterar) btnAlterar.disabled = true;
             }
         }
-
+        
         clienteSelect.addEventListener('change', async (e) => {
             const novoClienteId = e.target.value;
             if (!novoClienteId) {
@@ -226,15 +226,17 @@
                 localSelect.innerHTML = '<option value="">Selecione um cliente</option>';
                 return;
             }
-
+    
             const clienteSelecionado = todosClientesIsolado.find(c => c.id === novoClienteId);
             if (clienteSelecionado) {
                 clienteIdGlobalEditarIsolado = novoClienteId;
                 enderecoInput.value = clienteSelecionado.endereco || '';
                 cidadeInput.value = clienteSelecionado.cidade || '';
-
+    
                 localSelect.innerHTML = '<option value="">Carregando locais...</option>';
-                const novosLocais = await getLocaisPorClienteIsolado(novoClienteId);
+                // CORREÇÃO FINAL: O ID do cliente para a API do Notion não deve conter hífens.
+                const idSemHifens = novoClienteId.replace(/-/g, '');
+                const novosLocais = await getLocaisPorClienteIsolado(idSemHifens);
                 popularSelect(localSelect, novosLocais, 'id', 'nome');
             }
         });
@@ -254,7 +256,7 @@
                     observacoes: observacoesTextarea ? observacoesTextarea.value : null,
                     status: statusSelect ? statusSelect.value : null,
                 };
-
+                
                 const selectedClienteOption = clienteSelect.options[clienteSelect.selectedIndex];
                 const dadosFirebase = {
                     ...dadosNotion,
