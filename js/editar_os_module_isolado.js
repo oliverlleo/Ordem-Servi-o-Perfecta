@@ -74,6 +74,32 @@
         }
     }
 
+    async function getEnderecoIsolado(clienteId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/clientes/${clienteId}/endereco`);
+            if (!response.ok) throw new Error('Erro ao buscar endereço do cliente');
+            const data = await response.json();
+            return data.endereco;
+        } catch (error) {
+            console.error('[Edição Dedicada] Erro em getEnderecoIsolado:', error);
+            mostrarMensagemEditarIsolado('Não foi possível buscar o endereço do cliente.', 'erro');
+            return "";
+        }
+    }
+
+    async function getCidadeIsolado(clienteId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/clientes/${clienteId}/cidade`);
+            if (!response.ok) throw new Error('Erro ao buscar cidade do cliente');
+            const data = await response.json();
+            return data.cidade;
+        } catch (error) {
+            console.error('[Edição Dedicada] Erro em getCidadeIsolado:', error);
+            mostrarMensagemEditarIsolado('Não foi possível buscar a cidade do cliente.', 'erro');
+            return "";
+        }
+    }
+
     async function getLocaisPorClienteIsolado(clienteId) {
         try {
             // CORREÇÃO FINAL: Adicionado o parâmetro de query `database` que estava faltando.
@@ -231,12 +257,22 @@
             const clienteSelecionado = todosClientesIsolado.find(c => c.id === novoClienteId);
             if (clienteSelecionado) {
                 clienteIdGlobalEditarIsolado = novoClienteId;
-                enderecoInput.value = clienteSelecionado.endereco || '';
-                cidadeInput.value = clienteSelecionado.cidade || '';
-    
+                
+                // Limpa os campos enquanto busca os novos dados
+                enderecoInput.value = 'Buscando...';
+                cidadeInput.value = 'Buscando...';
                 localSelect.innerHTML = '<option value="">Carregando locais...</option>';
-                // REVERTENDO: A API precisa do ID com hífens. O erro 400 deve ter outra causa.
-                const novosLocais = await getLocaisPorClienteIsolado(novoClienteId);
+
+                // Busca endereço, cidade e locais em paralelo
+                const [endereco, cidade, novosLocais] = await Promise.all([
+                    getEnderecoIsolado(novoClienteId),
+                    getCidadeIsolado(novoClienteId),
+                    getLocaisPorClienteIsolado(novoClienteId)
+                ]);
+
+                // Preenche os campos com os dados retornados
+                enderecoInput.value = endereco || '';
+                cidadeInput.value = cidade || '';
                 popularSelect(localSelect, novosLocais, 'id', 'nome');
             }
         });
