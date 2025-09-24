@@ -181,7 +181,7 @@ function renderizarTabelaGerenciamento(ordens) {
         const tr = document.createElement("tr");
         const agInicialFormatado = ordem.agendamentoInicial ? new Date(ordem.agendamentoInicial).toLocaleDateString("pt-BR") : "-";
         const agFinalFormatado = ordem.agendamentoFinal ? new Date(ordem.agendamentoFinal).toLocaleDateString("pt-BR") : "-";
-        const podeEditar = ordem.status === "Não iniciada";
+        const podeEditar = true; // Botão de editar sempre habilitado
         const podeReabrir = ordem.status === "Concluído" || ordem.status === "Gerou Pendências";
 
         tr.innerHTML = `
@@ -210,9 +210,7 @@ function renderizarTabelaGerenciamento(ordens) {
         const btnEditar = tr.querySelector(".btn-editar");
         if (btnEditar) {
             btnEditar.addEventListener("click", () => {
-                if (podeEditar) {
-                    window.location.href = `editar_os_isolado.html?id=${ordem.id}`;
-                }
+                window.location.href = `editar_os_isolado.html?id=${ordem.id}`;
             });
         }
 
