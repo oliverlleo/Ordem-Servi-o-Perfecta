@@ -144,8 +144,13 @@ async function carregarOrdensGerenciamento(filtros = {}) {
     const corpoTabelaOrdens = document.getElementById("corpoTabelaOrdens");
     corpoTabelaOrdens.innerHTML = '<tr><td colspan="9" style="text-align: center;">Carregando ordens...</td></tr>';
     try {
-        // CORREÇÃO: Sempre chamar getOrdensGerenciamento para obter os dados detalhados.
-        const ordens = await getOrdensGerenciamento(filtros);
+        let ordens;
+        // Se não houver filtros, busca todas as OS. Se houver, usa a busca com filtro.
+        if (Object.keys(filtros).length === 0) {
+            ordens = await getOrdens(); // Função que busca todas as ordens
+        } else {
+            ordens = await getOrdensGerenciamento(filtros); // Função que busca com filtros
+        }
         console.log("Ordens recebidas:", ordens);
         renderizarTabelaGerenciamento(ordens); // Renomeado para clareza
     } catch (error) {
@@ -176,7 +181,7 @@ function renderizarTabelaGerenciamento(ordens) {
         const tr = document.createElement("tr");
         const agInicialFormatado = ordem.agendamentoInicial ? new Date(ordem.agendamentoInicial).toLocaleDateString("pt-BR") : "-";
         const agFinalFormatado = ordem.agendamentoFinal ? new Date(ordem.agendamentoFinal).toLocaleDateString("pt-BR") : "-";
-        const podeEditar = true; // Botão de editar sempre habilitado
+        const podeEditar = ordem.status === "Não iniciada";
         const podeReabrir = ordem.status === "Concluído" || ordem.status === "Gerou Pendências";
 
         tr.innerHTML = `
@@ -205,7 +210,9 @@ function renderizarTabelaGerenciamento(ordens) {
         const btnEditar = tr.querySelector(".btn-editar");
         if (btnEditar) {
             btnEditar.addEventListener("click", () => {
-                window.location.href = `editar_os_isolado.html?id=${ordem.id}`;
+                if (podeEditar) {
+                    window.location.href = `editar_os_isolado.html?id=${ordem.id}`;
+                }
             });
         }
 
@@ -276,4 +283,3 @@ if (btnLimparFiltros) {
         carregarOrdensGerenciamento({});
     });
 }
-
