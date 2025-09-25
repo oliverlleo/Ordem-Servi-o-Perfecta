@@ -144,13 +144,8 @@ async function carregarOrdensGerenciamento(filtros = {}) {
     const corpoTabelaOrdens = document.getElementById("corpoTabelaOrdens");
     corpoTabelaOrdens.innerHTML = '<tr><td colspan="9" style="text-align: center;">Carregando ordens...</td></tr>';
     try {
-        let ordens;
-        // Se não houver filtros, busca todas as OS. Se houver, usa a busca com filtro.
-        if (Object.keys(filtros).length === 0) {
-            ordens = await getOrdens(); // Função que busca todas as ordens
-        } else {
-            ordens = await getOrdensGerenciamento(filtros); // Função que busca com filtros
-        }
+        // CORREÇÃO: Sempre chamar getOrdensGerenciamento para obter os dados detalhados.
+        const ordens = await getOrdensGerenciamento(filtros);
         console.log("Ordens recebidas:", ordens);
         renderizarTabelaGerenciamento(ordens); // Renomeado para clareza
     } catch (error) {
