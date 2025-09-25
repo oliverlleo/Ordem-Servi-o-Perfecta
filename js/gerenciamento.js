@@ -145,16 +145,34 @@ async function carregarOrdensGerenciamento(filtros = {}) {
     corpoTabelaOrdens.innerHTML = '<tr><td colspan="9" style="text-align: center;">Carregando ordens...</td></tr>';
     try {
         let ordens;
-        // Se não houver filtros, busca todas as OS. Se houver, usa a busca com filtro.
+
         if (Object.keys(filtros).length === 0) {
-            ordens = await getOrdens(); // Função que busca todas as ordens
+            // Quando não há filtros, busca a lista de todas as OS (sem detalhes) e, em seguida,
+            // busca os detalhes de cada uma individualmente.
+            console.log("Buscando todas as ordens (resumo)...");
+            const ordensBase = await getOrdens();
+            console.log(`Encontradas ${ordensBase.length} ordens. Buscando detalhes completos...`);
+            
+            // Busca os detalhes de todas as ordens em paralelo para otimizar.
+            ordens = await Promise.all(
+                ordensBase.map(ordem => getOrdemDetalhada(ordem.id).catch(err => {
+                    console.error(`Falha ao buscar detalhes da OS ${ordem.id}:`, err);
+                    // Retorna a ordem base com um erro para não quebrar a lista inteira.
+                    return { ...ordem, error: "Falha ao carregar detalhes", cliente: "Erro", local: "Erro" }; 
+                }))
+            );
+            console.log("Detalhes de todas as ordens carregados.");
+
         } else {
-            ordens = await getOrdensGerenciamento(filtros); // Função que busca com filtros
+            // Quando há filtros, o backend já retorna as OS com os detalhes.
+            console.log("Buscando ordens com filtros...");
+            ordens = await getOrdensGerenciamento(filtros);
         }
-        console.log("Ordens recebidas:", ordens);
-        renderizarTabelaGerenciamento(ordens); // Renomeado para clareza
+
+        console.log("Ordens recebidas para renderização:", ordens);
+        renderizarTabelaGerenciamento(ordens);
     } catch (error) {
-        console.error("Erro ao carregar ordens:", error);
+        console.error("Erro fatal ao carregar ordens:", error);
         corpoTabelaOrdens.innerHTML = '<tr><td colspan="9" style="text-align: center; color: red;">Erro ao carregar ordens. Tente novamente.</td></tr>';
     }
 }
