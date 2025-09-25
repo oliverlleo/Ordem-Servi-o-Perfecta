@@ -166,9 +166,9 @@ async function carregarOrdensGerenciamento(filtros = {}) {
                         ordemFinal.local = typeof detalhes.LOCAL === 'object' ? (detalhes.LOCAL.name || detalhes.LOCAL.nome) : detalhes.LOCAL;
                     }
 
-                    // Adiciona os prestadores (equipe), usando a chave correta "Equipe".
-                    if (detalhes.Equipe) {
-                        ordemFinal.prestadores = detalhes.Equipe;
+                    // Adiciona os prestadores (equipe).
+                    if (detalhes.prestadores) {
+                        ordemFinal.prestadores = detalhes.prestadores;
                     }
                     
                     return ordemFinal;
