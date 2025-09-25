@@ -1,3 +1,4 @@
+
 // --- Lógica para o Multi-Select Minimalista para Gerenciamento ---
 function inicializarMultiSelectGerenciamento() {
     const multiSelectContainer = document.getElementById('filtroStatusMultiGerenciamento');
@@ -143,10 +144,13 @@ async function carregarOrdensGerenciamento(filtros = {}) {
     const corpoTabelaOrdens = document.getElementById("corpoTabelaOrdens");
     corpoTabelaOrdens.innerHTML = '<tr><td colspan="9" style="text-align: center;">Carregando ordens...</td></tr>';
     try {
-        // A função getOrdensGerenciamento em services.js precisará ser ajustada
-        // para lidar com um array de status, se o backend esperar isso.
-        // Por enquanto, vamos assumir que o backend pode receber um array ou que services.js o tratará.
-        const ordens = await getOrdensGerenciamento(filtros); 
+        let ordens;
+        // Se não houver filtros, busca todas as OS. Se houver, usa a busca com filtro.
+        if (Object.keys(filtros).length === 0) {
+            ordens = await getOrdens(); // Função que busca todas as ordens
+        } else {
+            ordens = await getOrdensGerenciamento(filtros); // Função que busca com filtros
+        }
         console.log("Ordens recebidas:", ordens);
         renderizarTabelaGerenciamento(ordens); // Renomeado para clareza
     } catch (error) {
@@ -173,55 +177,42 @@ function renderizarTabelaGerenciamento(ordens) {
         return numB - numA; // Ordem decrescente (maior para menor)
     });
 
-    ordensOrdenadas.forEach(async (ordem) => {
+    ordensOrdenadas.forEach(ordem => {
         const tr = document.createElement("tr");
-
-        // Busca os detalhes completos para garantir que temos local e prestadores
-        let detalhesOrdem = ordem;
-        try {
-            // Reutiliza a função de service que busca detalhes
-            const detalhesCompletos = await getOrdemDetalhada(ordem.id);
-            detalhesOrdem = {
-                ...ordem,
-                local: detalhesCompletos.opcoes.locais.find(l => l.id === detalhesCompletos.localId)?.nome || 'N/A',
-                prestadores: detalhesCompletos.prestadores,
-            };
-        } catch (e) {
-            console.error(`Falha ao buscar detalhes para OS ${ordem.id}`, e);
-        }
-
-        const agInicialFormatado = detalhesOrdem.agendamentoInicial ? new Date(detalhesOrdem.agendamentoInicial).toLocaleDateString("pt-BR") : "-";
-        const agFinalFormatado = detalhesOrdem.agendamentoFinal ? new Date(detalhesOrdem.agendamentoFinal).toLocaleDateString("pt-BR") : "-";
-        const podeEditar = true; // Botão de editar sempre habilitado
-        const podeReabrir = detalhesOrdem.status === "Concluído" || detalhesOrdem.status === "Gerou Pendências";
+        const agInicialFormatado = ordem.agendamentoInicial ? new Date(ordem.agendamentoInicial).toLocaleDateString("pt-BR") : "-";
+        const agFinalFormatado = ordem.agendamentoFinal ? new Date(ordem.agendamentoFinal).toLocaleDateString("pt-BR") : "-";
+        const podeEditar = ordem.status === "Não iniciada";
+        const podeReabrir = ordem.status === "Concluído" || ordem.status === "Gerou Pendências";
 
         tr.innerHTML = `
-            <td>${detalhesOrdem.numeroOS || "-"}</td>
-            <td>${detalhesOrdem.cliente || "-"}</td>
-            <td>${detalhesOrdem.local || "-"}</td>
-            <td>${detalhesOrdem.status || "-"}</td>
+            <td>${ordem.numeroOS || "-"}</td>
+            <td>${ordem.cliente || "-"}</td>
+            <td>${ordem.local || "-"}</td>
+            <td>${ordem.status || "-"}</td>
             <td>${agInicialFormatado}</td>
             <td>${agFinalFormatado}</td>
-            <td>${detalhesOrdem.responsavel || "-"}</td>
-            <td>${Array.isArray(detalhesOrdem.prestadores) ? detalhesOrdem.prestadores.join(", ") : (detalhesOrdem.prestadores || "-")}</td>
+            <td>${ordem.responsavel || "-"}</td>
+            <td>${Array.isArray(ordem.prestadores) ? ordem.prestadores.join(", ") : (ordem.prestadores || "-")}</td>
             <td class="acoes">
-                <button class="btn-visualizar" data-id="${detalhesOrdem.id}">Visualizar</button>
-                <button class="btn-editar" data-id="${detalhesOrdem.id}" ${!podeEditar ? 'disabled' : ''}>Editar</button>
-                <button class="btn-reabrir" data-id="${detalhesOrdem.id}" data-num="${detalhesOrdem.numeroOS || ''}" ${!podeReabrir ? 'disabled' : ''}>Reabrir</button>
+                <button class="btn-visualizar" data-id="${ordem.id}">Visualizar</button>
+                <button class="btn-editar" data-id="${ordem.id}" ${!podeEditar ? 'disabled' : ''}>Editar</button>
+                <button class="btn-reabrir" data-id="${ordem.id}" data-num="${ordem.numeroOS || ''}" ${!podeReabrir ? 'disabled' : ''}>Reabrir</button>
             </td>
         `;
 
         const btnVisualizar = tr.querySelector(".btn-visualizar");
         if (btnVisualizar) {
             btnVisualizar.addEventListener("click", () => {
-                window.location.href = `visualizar_os.html?id=${detalhesOrdem.id}`;
+                window.location.href = `visualizar_os.html?id=${ordem.id}`;
             });
         }
 
         const btnEditar = tr.querySelector(".btn-editar");
         if (btnEditar) {
             btnEditar.addEventListener("click", () => {
-                window.location.href = `editar_os_isolado.html?id=${detalhesOrdem.id}`;
+                if (podeEditar) {
+                    window.location.href = `editar_os_isolado.html?id=${ordem.id}`;
+                }
             });
         }
 
@@ -229,7 +220,7 @@ function renderizarTabelaGerenciamento(ordens) {
         if (btnReabrir) {
             btnReabrir.addEventListener("click", () => {
                 if (podeReabrir) {
-                    window.location.href = `reabrir_os_v2.html?id=${detalhesOrdem.id}&num=${detalhesOrdem.numeroOS || ''}`;
+                    window.location.href = `reabrir_os_v2.html?id=${ordem.id}&num=${ordem.numeroOS || ''}`;
                 }
             });
         }
@@ -242,23 +233,38 @@ const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
 if (btnAplicarFiltros) {
     btnAplicarFiltros.addEventListener("click", () => {
         const statusSelecionados = getSelectedStatusValuesGerenciamento();
+        
+        // Mapeamento correto dos campos do frontend para os nomes esperados pelo backend/Notion
         const filtros = {
-            numeroOS: document.getElementById("filtroNumOS").value.trim(),
-            cliente: document.getElementById("filtroCliente").value.trim(),
-            local: document.getElementById("filtroLocal").value.trim(),
-            // Se 'Todos' for selecionado (ou nada), statusSelecionados será ['']. 
-            // Se um ou mais status específicos forem selecionados, será um array desses status.
-            status: (statusSelecionados.length === 1 && statusSelecionados[0] === "") ? null : statusSelecionados.join(","), // Envia como string separada por vírgula
-            agendamentoInicial: document.getElementById("filtroAgInicial").value,
-            agendamentoFinal: document.getElementById("filtroAgFinal").value,
-            responsavel: document.getElementById("filtroResponsavel").value.trim(),
-            prestador: document.getElementById("filtroPrestador").value.trim(),
+            // Mapear para o campo correto no Notion (O.S. -> unique_id)
+            "O.S.": document.getElementById("filtroNumOS").value.trim(),
+            
+            // Mapear para o campo correto no Notion (Cliente -> relation)
+            Cliente: document.getElementById("filtroCliente").value.trim(),
+            
+            // Mapear para o campo correto no Notion (LOCAL -> relation)
+            LOCAL: document.getElementById("filtroLocal").value.trim(),
+            
+            // Mapear para o campo correto no Notion (Status -> status)
+            Status: (statusSelecionados.length === 1 && statusSelecionados[0] === "") ? null : statusSelecionados.join(","),
+            
+            // Mapear para os campos corretos no Notion (datas)
+            "Agendamento Inicial": document.getElementById("filtroAgInicial").value,
+            "Agendamento Final": document.getElementById("filtroAgFinal").value,
+            
+            // Mapear para os campos corretos no Notion
+            Responsável: document.getElementById("filtroResponsavel").value.trim(),
+            Equipe: document.getElementById("filtroPrestador").value.trim(),
         };
+        
+        // Remover campos vazios
         Object.keys(filtros).forEach(key => {
             if (filtros[key] === "" || filtros[key] === null) {
                 delete filtros[key];
             }
         });
+        
+        console.log("Aplicando filtros mapeados:", filtros);
         carregarOrdensGerenciamento(filtros);
     });
 }
