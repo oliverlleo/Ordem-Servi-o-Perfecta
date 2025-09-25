@@ -147,25 +147,38 @@ async function carregarOrdensGerenciamento(filtros = {}) {
         let ordens;
 
         if (Object.keys(filtros).length === 0) {
-            // Quando não há filtros, busca a lista de todas as OS (sem detalhes) e, em seguida,
-            // busca os detalhes de cada uma individualmente.
-            console.log("Buscando todas as ordens (resumo)...");
+            // 1. Busca a lista de todas as OS (que pode não ter todos os detalhes).
             const ordensBase = await getOrdens();
-            console.log(`Encontradas ${ordensBase.length} ordens. Buscando detalhes completos...`);
             
-            // Busca os detalhes de todas as ordens em paralelo para otimizar.
-            ordens = await Promise.all(
-                ordensBase.map(ordem => getOrdemDetalhada(ordem.id).catch(err => {
-                    console.error(`Falha ao buscar detalhes da OS ${ordem.id}:`, err);
-                    // Retorna a ordem base com um erro para não quebrar a lista inteira.
-                    return { ...ordem, error: "Falha ao carregar detalhes", cliente: "Erro", local: "Erro" }; 
-                }))
-            );
-            console.log("Detalhes de todas as ordens carregados.");
+            // 2. Para cada OS, busca os detalhes completos e mescla os dados de forma segura.
+            ordens = await Promise.all(ordensBase.map(async (ordem) => {
+                try {
+                    const detalhes = await getOrdemDetalhada(ordem.id);
+                    const ordemFinal = { ...ordem }; // Começa com os dados base.
 
+                    // Atualiza o cliente, tratando o caso de ser um objeto.
+                    if (detalhes.cliente) {
+                        ordemFinal.cliente = typeof detalhes.cliente === 'object' ? (detalhes.cliente.name || detalhes.cliente.nome) : detalhes.cliente;
+                    }
+
+                    // Adiciona o local, tratando o caso de ser um objeto.
+                    if (detalhes.local) {
+                        ordemFinal.local = typeof detalhes.local === 'object' ? (detalhes.local.name || detalhes.local.nome) : detalhes.local;
+                    }
+
+                    // Adiciona os prestadores (equipe).
+                    if (detalhes.prestadores) {
+                        ordemFinal.prestadores = detalhes.prestadores;
+                    }
+                    
+                    return ordemFinal;
+                } catch (e) {
+                    console.error(`Falha ao obter detalhes para OS ${ordem.id}:`, e);
+                    return ordem; // Retorna a ordem original em caso de erro nos detalhes.
+                }
+            }));
         } else {
-            // Quando há filtros, o backend já retorna as OS com os detalhes.
-            console.log("Buscando ordens com filtros...");
+            // Se houver filtros, a função de gerenciamento já retorna os dados completos.
             ordens = await getOrdensGerenciamento(filtros);
         }
 
