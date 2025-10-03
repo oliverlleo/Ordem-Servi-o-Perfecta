@@ -10,28 +10,11 @@ const ILC = "1d8d9246083e80128f65f99939f3593d";
  */
 async function getClientes() {
   try {
-    let allClients = [];
-    let hasMore = true;
-    let startCursor = undefined;
-
-    while (hasMore) {
-      const url = new URL(`${API_URL}/clientes`);
-      if (startCursor) {
-        url.searchParams.append("start_cursor", startCursor);
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Erro ao buscar clientes");
-      }
-
-      const data = await response.json();
-      allClients = allClients.concat(data.results);
-      hasMore = data.has_more;
-      startCursor = data.next_cursor;
+    const response = await fetch(`${API_URL}/clientes`);
+    if (!response.ok) {
+      throw new Error("Erro ao buscar clientes");
     }
-
-    return allClients;
+    return await response.json();
   } catch (error) {
     console.error("Erro ao buscar clientes:", error);
     mostrarMensagem("Erro ao buscar clientes. Tente novamente.", "erro");
