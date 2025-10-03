@@ -9,62 +9,64 @@ const ILC = "1d8d9246083e80128f65f99939f3593d";
  * @returns {Promise<Array>} Lista de clientes
  */
 async function getClientes() {
-  let allClients = [];
+  const allClients = [];
   let hasMore = true;
   let startCursor = undefined;
 
   try {
     while (hasMore) {
+      // Construct the URL with pagination cursor if available
       const url = new URL(`${API_URL}/clientes`);
       if (startCursor) {
         url.searchParams.append("start_cursor", startCursor);
       }
 
+      // Fetch the data
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`A requisição à API falhou com status ${response.status}`);
+        throw new Error(`API request failed with status ${response.status}`);
       }
-
       const data = await response.json();
 
-      // The backend might return an object {results: []} or a direct array [].
-      // This safely extracts the results in either case.
-      const results = data.results || (Array.isArray(data) ? data : []);
+      // The backend is expected to return an object with a 'results' key.
+      const results = data.results;
 
       if (!Array.isArray(results)) {
-        // If results isn't an array, something is wrong with the API response.
-        throw new Error("Formato de dados inesperado recebido da API.");
+        console.error("Unexpected data format from API:", data);
+        throw new Error("Received unexpected data format from the server.");
       }
 
-      // Map the results to the {id, nome} format the frontend expects.
+      // Map the raw Notion page objects to the required {id, nome} format
       const mappedClients = results.map(page => {
-        // Perform robust validation of each item.
+        // Robustly check if the page object has the required structure
         if (page && page.id && page.properties) {
           const titleProperty = Object.values(page.properties).find(p => p.type === 'title');
-          if (titleProperty && titleProperty.title && titleProperty.title[0] && titleProperty.title[0].text) {
+          if (titleProperty && titleProperty.title && titleProperty.title.length > 0 && titleProperty.title[0].text) {
             return {
               id: page.id,
               nome: titleProperty.title[0].text.content || 'Nome Indisponível'
             };
           }
         }
-        // If an item doesn't have the expected format, it will be filtered out later.
+        // Return null for invalid items, to be filtered out later
         return null;
-      }).filter(Boolean); // Filter out any null items.
+      }).filter(Boolean); // filter(Boolean) removes null/undefined entries
 
-      allClients = allClients.concat(mappedClients);
+      // Add the clients from the current page to the master list
+      allClients.push(...mappedClients);
 
-      // Update the pagination state for the next loop.
+      // Update pagination state for the next loop
       hasMore = data.has_more || false;
       startCursor = data.next_cursor || null;
     }
 
+    // Return the complete list
     return allClients;
 
   } catch (error) {
-    console.error("Erro crítico ao buscar clientes:", error);
-    mostrarMensagem("Não foi possível carregar os clientes. Verifique o console para mais detalhes.", "erro");
-    // Return an empty array to prevent the rest of the app from breaking.
+    console.error("A critical error occurred while fetching clients:", error);
+    mostrarMensagem("Failed to load the client list. Please check the console for more details.", "erro");
+    // Return an empty array to prevent the rest of the application from breaking.
     return [];
   }
 }
