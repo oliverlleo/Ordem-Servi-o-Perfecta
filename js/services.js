@@ -16,9 +16,6 @@ async function getClientes() {
 
     while (hasMore) {
       const url = new URL(`${API_URL}/clientes`);
-      // Explicitly request the maximum page size to ensure we get as many clients as possible per request.
-      url.searchParams.append("page_size", "100");
-
       if (startCursor) {
         url.searchParams.append("start_cursor", startCursor);
       }
@@ -29,30 +26,34 @@ async function getClientes() {
       }
 
       const data = await response.json();
+      // Ensure pageResults is an array, even if data.results is missing.
       const pageResults = data.results || [];
 
+      // Map the raw Notion page objects to the {id, nome} format the frontend expects.
       const mappedResults = pageResults.map(page => {
         if (page && page.properties && typeof page.properties === 'object') {
+          // Find the 'title' property, which holds the customer's name.
           const titleProperty = Object.values(page.properties).find(
             prop => prop.type === 'title'
           );
-          const nome = titleProperty ?.title[0] ?.text ?.content || 'Nome não encontrado';
+          const nome = titleProperty?.title[0]?.text?.content || 'Nome não encontrado';
           return {
             id: page.id,
             nome: nome,
           };
         }
-        return null; // Return null for invalid page structures
+        // Return null for any items that don't match the expected structure.
+        return null;
       });
 
       allClients = allClients.concat(mappedResults);
 
-      // Continue paginating as long as the API indicates there are more results.
+      // Continue the loop as long as the API indicates there are more pages.
       hasMore = data.has_more;
       startCursor = data.next_cursor;
     }
 
-    // Filter out any null entries that may have resulted from invalid data.
+    // Filter out any null entries that might have resulted from invalid data.
     return allClients.filter(client => client && client.id);
   } catch (error) {
     console.error("Erro ao buscar clientes:", error);
