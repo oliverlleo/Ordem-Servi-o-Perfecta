@@ -9,13 +9,12 @@ const ILC = "1d8d9246083e80128f65f99939f3593d";
  * @returns {Promise<Array>} Lista de clientes
  */
 async function getClientes() {
-  try {
-    let allClients = [];
-    let hasMore = true;
-    let startCursor = undefined;
+  let allClients = [];
+  let hasMore = true;
+  let startCursor = undefined;
 
+  try {
     while (hasMore) {
-      // Construct the URL for fetching clients
       const url = new URL(`${API_URL}/clientes`);
       if (startCursor) {
         url.searchParams.append("start_cursor", startCursor);
@@ -23,51 +22,49 @@ async function getClientes() {
 
       const response = await fetch(url);
       if (!response.ok) {
-        // If the server returns an error, stop and report it.
-        throw new Error(`Erro ao buscar clientes: ${response.statusText}`);
+        throw new Error(`A requisição à API falhou com status ${response.status}`);
       }
 
       const data = await response.json();
 
-      // The backend seems to return a raw Notion API object.
-      // We need to extract the results and map them to the format the frontend expects.
-      const pageResults = data.results || [];
+      // The backend might return an object {results: []} or a direct array [].
+      // This safely extracts the results in either case.
+      const results = data.results || (Array.isArray(data) ? data : []);
 
-      const mappedResults = pageResults.map(page => {
-        // Ensure the page object and its properties are valid before trying to map.
-        if (page && page.properties && typeof page.properties === 'object') {
-          // The customer name is in a property of type 'title'.
-          const titleProperty = Object.values(page.properties).find(
-            prop => prop.type === 'title'
-          );
-          // Extract the text content from the title property.
-          const nome = titleProperty?.title?.[0]?.text?.content || 'Nome não encontrado';
-          return {
-            id: page.id,
-            nome: nome,
-          };
+      if (!Array.isArray(results)) {
+        // If results isn't an array, something is wrong with the API response.
+        throw new Error("Formato de dados inesperado recebido da API.");
+      }
+
+      // Map the results to the {id, nome} format the frontend expects.
+      const mappedClients = results.map(page => {
+        // Perform robust validation of each item.
+        if (page && page.id && page.properties) {
+          const titleProperty = Object.values(page.properties).find(p => p.type === 'title');
+          if (titleProperty && titleProperty.title && titleProperty.title[0] && titleProperty.title[0].text) {
+            return {
+              id: page.id,
+              nome: titleProperty.title[0].text.content || 'Nome Indisponível'
+            };
+          }
         }
-        // If the page format is unexpected, return null to filter it out later.
+        // If an item doesn't have the expected format, it will be filtered out later.
         return null;
-      });
+      }).filter(Boolean); // Filter out any null items.
 
-      // Add the newly fetched and mapped clients to our master list.
-      // We filter out any nulls that resulted from invalid data.
-      allClients = allClients.concat(mappedResults.filter(Boolean));
+      allClients = allClients.concat(mappedClients);
 
-      // Update pagination state for the next loop iteration.
-      // If `has_more` is false or `next_cursor` is missing, the loop will terminate.
+      // Update the pagination state for the next loop.
       hasMore = data.has_more || false;
       startCursor = data.next_cursor || null;
     }
 
-    // Return the complete list of clients.
     return allClients;
+
   } catch (error) {
-    // Log the error and show a user-friendly message.
-    console.error("Erro detalhado ao buscar clientes:", error);
-    mostrarMensagem("Ocorreu um erro ao carregar a lista de clientes. Por favor, tente novamente.", "erro");
-    // Return an empty array to prevent the application from crashing.
+    console.error("Erro crítico ao buscar clientes:", error);
+    mostrarMensagem("Não foi possível carregar os clientes. Verifique o console para mais detalhes.", "erro");
+    // Return an empty array to prevent the rest of the app from breaking.
     return [];
   }
 }
