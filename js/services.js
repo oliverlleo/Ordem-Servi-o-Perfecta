@@ -9,51 +9,15 @@ const ILC = "1d8d9246083e80128f65f99939f3593d";
  * @returns {Promise<Array>} Lista de clientes
  */
 async function getClientes() {
-  let allClients = [];
-  let hasMore = true;
-  let startCursor = undefined;
-
   try {
-    while (hasMore) {
-      const url = new URL(`${API_URL}/clientes`);
-      if (startCursor) {
-        url.searchParams.append("start_cursor", startCursor);
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      const results = data.results || [];
-
-      // Map the complex Notion page objects to the simple {id, nome} format needed by the frontend.
-      const mappedClients = results.map(page => {
-        if (page && page.properties) {
-          const titleProperty = Object.values(page.properties).find(p => p.type === 'title');
-          if (titleProperty && titleProperty.title && titleProperty.title[0] && titleProperty.title[0].text) {
-            return {
-              id: page.id,
-              nome: titleProperty.title[0].text.content
-            };
-          }
-        }
-        return null;
-      }).filter(Boolean); // Filter out any malformed entries.
-
-      allClients = allClients.concat(mappedClients);
-
-      // Update pagination state for the next loop.
-      hasMore = data.has_more || false;
-      startCursor = data.next_cursor || null;
+    const response = await fetch(`${API_URL}/clientes`);
+    if (!response.ok) {
+      throw new Error("Erro ao buscar clientes");
     }
-
-    return allClients;
-
+    return await response.json();
   } catch (error) {
-    console.error("A critical error occurred while fetching clients:", error);
-    mostrarMensagem("Failed to load the client list. Please check the console for more details.", "erro");
+    console.error("Erro ao buscar clientes:", error);
+    mostrarMensagem("Erro ao buscar clientes. Tente novamente.", "erro");
     return [];
   }
 }
