@@ -26,12 +26,40 @@ async function getClientes() {
       }
 
       const data = await response.json();
-      allClients = allClients.concat(data.results);
-      hasMore = data.has_more;
-      startCursor = data.next_cursor;
+
+      // Handle both array and object responses from the API
+      const pageResults = Array.isArray(data) ? data : data.results || [];
+
+      // Map raw Notion page objects to the expected {id, nome} format
+      const mappedResults = pageResults.map(page => {
+        if (page && page.properties && typeof page.properties === 'object') {
+          // Find the 'title' property to use as the customer's name
+          const titleProperty = Object.values(page.properties).find(
+            prop => prop.type === 'title'
+          );
+          return {
+            id: page.id,
+            nome: titleProperty ?
+              titleProperty.title[0] ?.text ?.content : 'Nome não encontrado',
+          };
+        }
+        // If it's not a raw page, assume it's already a mapped client object
+        return page;
+      });
+
+      allClients = allClients.concat(mappedResults);
+
+      // Check for more pages
+      if (data.has_more && data.next_cursor) {
+        hasMore = true;
+        startCursor = data.next_cursor;
+      } else {
+        hasMore = false;
+      }
     }
 
-    return allClients;
+    // Filter out any null or undefined entries that might have been added
+    return allClients.filter(client => client);
   } catch (error) {
     console.error("Erro ao buscar clientes:", error);
     mostrarMensagem("Erro ao buscar clientes. Tente novamente.", "erro");
