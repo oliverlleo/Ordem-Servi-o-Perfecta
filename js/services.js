@@ -16,6 +16,9 @@ async function getClientes() {
 
     while (hasMore) {
       const url = new URL(`${API_URL}/clientes`);
+      // Explicitly request the maximum page size to ensure we get as many clients as possible per request.
+      url.searchParams.append("page_size", "100");
+
       if (startCursor) {
         url.searchParams.append("start_cursor", startCursor);
       }
@@ -26,40 +29,31 @@ async function getClientes() {
       }
 
       const data = await response.json();
+      const pageResults = data.results || [];
 
-      // Handle both array and object responses from the API
-      const pageResults = Array.isArray(data) ? data : data.results || [];
-
-      // Map raw Notion page objects to the expected {id, nome} format
       const mappedResults = pageResults.map(page => {
         if (page && page.properties && typeof page.properties === 'object') {
-          // Find the 'title' property to use as the customer's name
           const titleProperty = Object.values(page.properties).find(
             prop => prop.type === 'title'
           );
+          const nome = titleProperty ?.title[0] ?.text ?.content || 'Nome não encontrado';
           return {
             id: page.id,
-            nome: titleProperty ?
-              titleProperty.title[0] ?.text ?.content : 'Nome não encontrado',
+            nome: nome,
           };
         }
-        // If it's not a raw page, assume it's already a mapped client object
-        return page;
+        return null; // Return null for invalid page structures
       });
 
       allClients = allClients.concat(mappedResults);
 
-      // Check for more pages
-      if (data.has_more && data.next_cursor) {
-        hasMore = true;
-        startCursor = data.next_cursor;
-      } else {
-        hasMore = false;
-      }
+      // Continue paginating as long as the API indicates there are more results.
+      hasMore = data.has_more;
+      startCursor = data.next_cursor;
     }
 
-    // Filter out any null or undefined entries that might have been added
-    return allClients.filter(client => client);
+    // Filter out any null entries that may have resulted from invalid data.
+    return allClients.filter(client => client && client.id);
   } catch (error) {
     console.error("Erro ao buscar clientes:", error);
     mostrarMensagem("Erro ao buscar clientes. Tente novamente.", "erro");
