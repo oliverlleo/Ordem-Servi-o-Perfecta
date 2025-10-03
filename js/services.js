@@ -641,4 +641,3 @@ async function criarOrdemReaberta_isolado(dadosNovaOs) {
     throw error;
   }
 }
-
