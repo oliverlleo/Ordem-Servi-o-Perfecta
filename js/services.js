@@ -15,6 +15,7 @@ async function getClientes() {
     let startCursor = undefined;
 
     while (hasMore) {
+      // Construct the URL for fetching clients
       const url = new URL(`${API_URL}/clientes`);
       if (startCursor) {
         url.searchParams.append("start_cursor", startCursor);
@@ -22,42 +23,51 @@ async function getClientes() {
 
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error("Erro ao buscar clientes");
+        // If the server returns an error, stop and report it.
+        throw new Error(`Erro ao buscar clientes: ${response.statusText}`);
       }
 
       const data = await response.json();
-      // Ensure pageResults is an array, even if data.results is missing.
+
+      // The backend seems to return a raw Notion API object.
+      // We need to extract the results and map them to the format the frontend expects.
       const pageResults = data.results || [];
 
-      // Map the raw Notion page objects to the {id, nome} format the frontend expects.
       const mappedResults = pageResults.map(page => {
+        // Ensure the page object and its properties are valid before trying to map.
         if (page && page.properties && typeof page.properties === 'object') {
-          // Find the 'title' property, which holds the customer's name.
+          // The customer name is in a property of type 'title'.
           const titleProperty = Object.values(page.properties).find(
             prop => prop.type === 'title'
           );
-          const nome = titleProperty?.title[0]?.text?.content || 'Nome não encontrado';
+          // Extract the text content from the title property.
+          const nome = titleProperty?.title?.[0]?.text?.content || 'Nome não encontrado';
           return {
             id: page.id,
             nome: nome,
           };
         }
-        // Return null for any items that don't match the expected structure.
+        // If the page format is unexpected, return null to filter it out later.
         return null;
       });
 
-      allClients = allClients.concat(mappedResults);
+      // Add the newly fetched and mapped clients to our master list.
+      // We filter out any nulls that resulted from invalid data.
+      allClients = allClients.concat(mappedResults.filter(Boolean));
 
-      // Continue the loop as long as the API indicates there are more pages.
-      hasMore = data.has_more;
-      startCursor = data.next_cursor;
+      // Update pagination state for the next loop iteration.
+      // If `has_more` is false or `next_cursor` is missing, the loop will terminate.
+      hasMore = data.has_more || false;
+      startCursor = data.next_cursor || null;
     }
 
-    // Filter out any null entries that might have resulted from invalid data.
-    return allClients.filter(client => client && client.id);
+    // Return the complete list of clients.
+    return allClients;
   } catch (error) {
-    console.error("Erro ao buscar clientes:", error);
-    mostrarMensagem("Erro ao buscar clientes. Tente novamente.", "erro");
+    // Log the error and show a user-friendly message.
+    console.error("Erro detalhado ao buscar clientes:", error);
+    mostrarMensagem("Ocorreu um erro ao carregar a lista de clientes. Por favor, tente novamente.", "erro");
+    // Return an empty array to prevent the application from crashing.
     return [];
   }
 }
