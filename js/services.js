@@ -9,64 +9,51 @@ const ILC = "1d8d9246083e80128f65f99939f3593d";
  * @returns {Promise<Array>} Lista de clientes
  */
 async function getClientes() {
-  const allClients = [];
+  let allClients = [];
   let hasMore = true;
   let startCursor = undefined;
 
   try {
     while (hasMore) {
-      // Construct the URL with pagination cursor if available
       const url = new URL(`${API_URL}/clientes`);
       if (startCursor) {
         url.searchParams.append("start_cursor", startCursor);
       }
 
-      // Fetch the data
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);
       }
+
       const data = await response.json();
+      const results = data.results || [];
 
-      // The backend is expected to return an object with a 'results' key.
-      const results = data.results;
-
-      if (!Array.isArray(results)) {
-        console.error("Unexpected data format from API:", data);
-        throw new Error("Received unexpected data format from the server.");
-      }
-
-      // Map the raw Notion page objects to the required {id, nome} format
+      // Map the complex Notion page objects to the simple {id, nome} format needed by the frontend.
       const mappedClients = results.map(page => {
-        // Robustly check if the page object has the required structure
-        if (page && page.id && page.properties) {
+        if (page && page.properties) {
           const titleProperty = Object.values(page.properties).find(p => p.type === 'title');
-          if (titleProperty && titleProperty.title && titleProperty.title.length > 0 && titleProperty.title[0].text) {
+          if (titleProperty && titleProperty.title && titleProperty.title[0] && titleProperty.title[0].text) {
             return {
               id: page.id,
-              nome: titleProperty.title[0].text.content || 'Nome Indisponível'
+              nome: titleProperty.title[0].text.content
             };
           }
         }
-        // Return null for invalid items, to be filtered out later
         return null;
-      }).filter(Boolean); // filter(Boolean) removes null/undefined entries
+      }).filter(Boolean); // Filter out any malformed entries.
 
-      // Add the clients from the current page to the master list
-      allClients.push(...mappedClients);
+      allClients = allClients.concat(mappedClients);
 
-      // Update pagination state for the next loop
+      // Update pagination state for the next loop.
       hasMore = data.has_more || false;
       startCursor = data.next_cursor || null;
     }
 
-    // Return the complete list
     return allClients;
 
   } catch (error) {
     console.error("A critical error occurred while fetching clients:", error);
     mostrarMensagem("Failed to load the client list. Please check the console for more details.", "erro");
-    // Return an empty array to prevent the rest of the application from breaking.
     return [];
   }
 }
