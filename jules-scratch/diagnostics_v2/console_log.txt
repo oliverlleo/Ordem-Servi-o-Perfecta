@@ -1,0 +1,21 @@
+[LOG] [DEBUG] getClientes: Starting function call.
+[LOG] [DEBUG] getClientes: Fetching page 1.
+[LOG] [DEBUG] getClientes: Fetching URL: https://us-central1-os---perfecta.cloudfunctions.net/api/clientes
+[ERROR] Access to fetch at 'https://us-central1-os---perfecta.cloudfunctions.net/api/clientes' from origin 'null' has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 'https://osperfecta.pages.dev' that is not equal to the supplied origin. Have the server send the header with a valid value.
+[ERROR] Failed to load resource: net::ERR_FAILED
+[ERROR] [DEBUG] getClientes: A critical error occurred: TypeError: Failed to fetch
+    at getClientes (file:///app/js/services.js:29:30)
+    at carregarClientes (file:///app/js/cadastro.js:31:29)
+    at HTMLDocument.<anonymous> (file:///app/js/cadastro.js:330:9)
+[ERROR] Access to fetch at 'https://us-central1-os---perfecta.cloudfunctions.net/api/ordem-servico/equipes' from origin 'null' has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 'https://osperfecta.pages.dev' that is not equal to the supplied origin. Have the server send the header with a valid value.
+[ERROR] Failed to load resource: net::ERR_FAILED
+[ERROR] Erro ao buscar equipes: TypeError: Failed to fetch
+    at getEquipe (file:///app/js/services.js:197:28)
+    at carregarEquipes (file:///app/js/cadastro.js:102:29)
+    at HTMLDocument.<anonymous> (file:///app/js/cadastro.js:331:9)
+[ERROR] Access to fetch at 'https://us-central1-os---perfecta.cloudfunctions.net/api/ordem-servico/responsaveis' from origin 'null' has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 'https://osperfecta.pages.dev' that is not equal to the supplied origin. Have the server send the header with a valid value.
+[ERROR] Failed to load resource: net::ERR_FAILED
+[ERROR] Erro ao buscar responsáveis: TypeError: Failed to fetch
+    at getResponsaveis (file:///app/js/services.js:215:28)
+    at carregarResponsaveis (file:///app/js/cadastro.js:127:34)
+    at HTMLDocument.<anonymous> (file:///app/js/cadastro.js:332:9)

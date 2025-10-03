@@ -9,54 +9,51 @@ const ILC = "1d8d9246083e80128f65f99939f3593d";
  * @returns {Promise<Array>} Lista de clientes
  */
 async function getClientes() {
-  try {
-    let allClients = [];
-    let hasMore = true;
-    let startCursor = undefined;
+  let allClients = [];
+  let hasMore = true;
+  let startCursor = undefined;
 
+  try {
     while (hasMore) {
       const url = new URL(`${API_URL}/clientes`);
-      // Explicitly request the maximum page size to ensure we get as many clients as possible per request.
-      url.searchParams.append("page_size", "100");
-
       if (startCursor) {
         url.searchParams.append("start_cursor", startCursor);
       }
 
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error("Erro ao buscar clientes");
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
       const data = await response.json();
-      const pageResults = data.results || [];
+      const results = data.results || [];
 
-      const mappedResults = pageResults.map(page => {
-        if (page && page.properties && typeof page.properties === 'object') {
-          const titleProperty = Object.values(page.properties).find(
-            prop => prop.type === 'title'
-          );
-          const nome = titleProperty ?.title[0] ?.text ?.content || 'Nome não encontrado';
-          return {
-            id: page.id,
-            nome: nome,
-          };
+      // Map the complex Notion page objects to the simple {id, nome} format needed by the frontend.
+      const mappedClients = results.map(page => {
+        if (page && page.properties) {
+          const titleProperty = Object.values(page.properties).find(p => p.type === 'title');
+          if (titleProperty && titleProperty.title && titleProperty.title[0] && titleProperty.title[0].text) {
+            return {
+              id: page.id,
+              nome: titleProperty.title[0].text.content
+            };
+          }
         }
-        return null; // Return null for invalid page structures
-      });
+        return null;
+      }).filter(Boolean); // Filter out any malformed entries.
 
-      allClients = allClients.concat(mappedResults);
+      allClients = allClients.concat(mappedClients);
 
-      // Continue paginating as long as the API indicates there are more results.
-      hasMore = data.has_more;
-      startCursor = data.next_cursor;
+      // Update pagination state for the next loop.
+      hasMore = data.has_more || false;
+      startCursor = data.next_cursor || null;
     }
 
-    // Filter out any null entries that may have resulted from invalid data.
-    return allClients.filter(client => client && client.id);
+    return allClients;
+
   } catch (error) {
-    console.error("Erro ao buscar clientes:", error);
-    mostrarMensagem("Erro ao buscar clientes. Tente novamente.", "erro");
+    console.error("A critical error occurred while fetching clients:", error);
+    mostrarMensagem("Failed to load the client list. Please check the console for more details.", "erro");
     return [];
   }
 }
